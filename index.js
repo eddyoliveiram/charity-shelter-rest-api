@@ -8,13 +8,22 @@ const seekerRoutes = require('./routes/seekerRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const pool = require('./config/db');
 
-app.use(express.json());
+const allowedOrigins = [
+    process.env.FRONTEND_URL_1,
+    process.env.FRONTEND_URL_2,
+];
 
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    withCredentials: true,
+    credentials: true,
 }));
 
 app.use('/auth', authRoutes);
