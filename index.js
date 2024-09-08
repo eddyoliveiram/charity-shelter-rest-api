@@ -10,11 +10,19 @@ const pool = require('./config/db');
 
 app.use(express.json());
 
+// Suporte para múltiplas URLs no CORS
+const allowedOrigins = [process.env.FRONTEND_URL_1, process.env.FRONTEND_URL_2];
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
+    origin: (origin, callback) => {
+        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    withCredentials: true,
+    credentials: true,
 }));
 
 app.use('/auth', authRoutes);
@@ -33,5 +41,5 @@ app.get('/test-db', async (req, res) => {
 });
 
 app.listen(process.env.PORT || 3333, () => {
-    console.log('Server running at http://localhost:${process.env.PORT || 3333}/');
+    console.log(`Server running at http://localhost:${process.env.PORT || 3333}/`);
 });
