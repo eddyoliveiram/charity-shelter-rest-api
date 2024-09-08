@@ -1,4 +1,5 @@
 const pool = require('../config/db');
+const jwt = require("jsonwebtoken");
 
 const createProviderProfile = async (req, res) => {
     const { name, email, password, phone, capacity, support_type, provider_description } = req.body;
@@ -7,20 +8,38 @@ const createProviderProfile = async (req, res) => {
     try {
         await client.query('BEGIN');
 
+        // Inserir na tabela de usuários
         const userResult = await client.query(
-            'INSERT INTO users (name, email, password, phone) VALUES ($1, $2, $3, $4) RETURNING id, name, email, password, phone',
-            [name, email, password, phone]
+            'INSERT INTO users (name, email, password, phone, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role',
+            [name, email, password, phone, 'provider']
         );
 
-        const userId = userResult.rows[0].id;
+        const user = userResult.rows[0]; // Extrai as informações do usuário
 
+        // Inserir na tabela de providers
         const providerResult = await client.query(
             'INSERT INTO providers (user_id, capacity, support_type, provider_description) VALUES ($1, $2, $3, $4) RETURNING *',
-            [userId, capacity, support_type, provider_description]
+            [user.id, capacity, support_type, provider_description]
         );
 
+        // Gera o token JWT
+        const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, {
+            expiresIn: '1h',
+        });
+
         await client.query('COMMIT');
-        res.status(201).json(providerResult.rows[0]);
+
+        // Retorna o token e as informações do usuário
+        return res.json({
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            },
+            provider: providerResult.rows[0] // Retorna também as informações do provider
+        });
     } catch (err) {
         await client.query('ROLLBACK');
         res.status(500).send(`Error creating provider profile: ${err.message}`);

@@ -4,7 +4,7 @@ const { createProviderProfile, updateProviderProfile, getAllProviders, getRandom
 const authMiddleware = require('../middlewares/authMiddleware');
 
 router.get('/', getAllProviders);
-router.post('/create', authMiddleware, createProviderProfile);
+router.post('/create', createProviderProfile);
 router.put('/update', authMiddleware, updateProviderProfile);
 router.get('/random', getRandomProviders);
 router.put('/request/:id', authMiddleware, handleRequest);
