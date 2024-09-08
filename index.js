@@ -8,22 +8,13 @@ const seekerRoutes = require('./routes/seekerRoutes');
 const requestRoutes = require('./routes/requestRoutes');
 const pool = require('./config/db');
 
-const allowedOrigins = [
-    process.env.FRONTEND_URL_1,
-    process.env.FRONTEND_URL_2,
-];
+app.use(express.json());
 
 app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
+    origin: process.env.FRONTEND_URL,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
+    withCredentials: true,
 }));
 
 app.use('/auth', authRoutes);
@@ -42,5 +33,5 @@ app.get('/test-db', async (req, res) => {
 });
 
 app.listen(process.env.PORT || 3333, () => {
-    console.log(`Server running at http://localhost:${process.env.PORT || 3333}/`);
+    console.log('Server running at http://localhost:${process.env.PORT || 3333}/');
 });
