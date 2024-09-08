@@ -53,21 +53,33 @@ const updateProviderProfile = async (req, res) => {
 
 const getAllProviders = async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM providers');
+        const result = await pool.query(`
+            SELECT p.*, u.name, u.email, u.phone
+            FROM providers p
+            JOIN users u ON p.user_id = u.id
+        `);
         res.json(result.rows);
     } catch (err) {
         res.status(500).send('Error retrieving providers');
     }
 };
 
+
 const getRandomProviders = async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM providers ORDER BY RANDOM() LIMIT 3');
+        const result = await pool.query(`
+            SELECT p.*, u.name, u.email, u.phone
+            FROM providers p
+            JOIN users u ON p.user_id = u.id
+            ORDER BY RANDOM()
+            LIMIT 3
+        `);
         res.json(result.rows);
     } catch (err) {
         res.status(500).send('Error retrieving random providers');
     }
 };
+
 
 const handleRequest = async (req, res) => {
     const { id } = req.params;
