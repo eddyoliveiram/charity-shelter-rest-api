@@ -82,17 +82,27 @@ const updateProviderProfile = async (req, res) => {
 };
 
 const getAllProviders = async (req, res) => {
+    const { user_id } = req.params;
+
     try {
         const result = await pool.query(`
-            SELECT p.*, u.name, u.email, u.phone
+            SELECT p.*, u.name, u.email, u.phone,
+                   CASE 
+                       WHEN r.id IS NOT NULL THEN TRUE 
+                       ELSE FALSE 
+                   END AS has_request,
+                   r.status
             FROM providers p
             JOIN users u ON p.user_id = u.id
-        `);
+            LEFT JOIN requests r ON r.provider_id = p.user_id AND r.seeker_id = $1
+        `, [user_id]);
+
         res.json(result.rows);
     } catch (err) {
         res.status(500).send('Error retrieving providers');
     }
 };
+
 
 
 const getRandomProviders = async (req, res) => {
