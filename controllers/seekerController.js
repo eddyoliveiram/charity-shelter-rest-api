@@ -1,4 +1,6 @@
 const pool = require('../config/db');
+const jwt = require('jsonwebtoken');
+const bcrypt = require("bcrypt");
 
 const createSeekerProfile = async (req, res) => {
     const { name, email, password, phone, group_size, need_type, seeker_description } = req.body;
@@ -7,20 +9,41 @@ const createSeekerProfile = async (req, res) => {
     try {
         await client.query('BEGIN');
 
+        // Hash da senha antes de salvar no banco de dados
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Insere o novo usuário na tabela `users`
         const userResult = await client.query(
-            'INSERT INTO users (name, email, password, phone) VALUES ($1, $2, $3, $4) RETURNING id, name, email, password, phone',
-            [name, email, password, phone]
+            'INSERT INTO users (name, email, password, phone, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role',
+            [name, email, hashedPassword, phone, 'seeker']
         );
 
-        const userId = userResult.rows[0].id;
+        const user = userResult.rows[0]; // Extrai as informações do usuário
 
+        // Insere o `seeker` na tabela `seekers`
         const seekerResult = await client.query(
             'INSERT INTO seekers (user_id, group_size, need_type, seeker_description) VALUES ($1, $2, $3, $4) RETURNING *',
-            [userId, group_size, need_type, seeker_description]
+            [user.id, group_size, need_type, seeker_description]
         );
 
+        // Gera o token JWT
+        const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, {
+            expiresIn: '1h',
+        });
+
         await client.query('COMMIT');
-        res.status(201).json(seekerResult.rows[0]);
+
+        // Retorna o token e as informações do usuário e `seeker`
+        return res.json({
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            },
+            seeker: seekerResult.rows[0]
+        });
     } catch (err) {
         await client.query('ROLLBACK');
         res.status(500).send(`Error creating seeker profile: ${err.message}`);
@@ -29,13 +52,22 @@ const createSeekerProfile = async (req, res) => {
     }
 };
 
+
+
 const updateSeekerProfile = async (req, res) => {
-    const { user_id, group_size, need_type, seeker_description } = req.body;
+    const { user_id, name, email, phone, group_size, need_type, seeker_description } = req.body;
 
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
 
+        // Atualiza os dados na tabela `users`
+        await client.query(
+            'UPDATE users SET name = $1, email = $2, phone = $3 WHERE id = $4',
+            [name, email, phone, user_id]
+        );
+
+        // Atualiza os dados na tabela `seekers`
         const result = await client.query(
             'UPDATE seekers SET group_size = $1, need_type = $2, seeker_description = $3 WHERE user_id = $4 RETURNING *',
             [group_size, need_type, seeker_description, user_id]
@@ -50,6 +82,7 @@ const updateSeekerProfile = async (req, res) => {
         client.release();
     }
 };
+
 
 const createRequest = async (req, res) => {
     const { seeker_id, provider_id } = req.body;
