@@ -113,9 +113,32 @@ const cancelRequest = async (req, res) => {
     }
 };
 
+const getSeekerProfile = async (req, res) => {
+    const { user_id } = req.params;
+
+    try {
+        const result = await pool.query(`
+            SELECT s.group_size, s.need_type, s.seeker_description, u.name, u.email, u.phone
+            FROM seekers s
+            JOIN users u ON s.user_id = u.id
+            WHERE s.user_id = $1
+        `, [user_id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).send('Seeker not found');
+        }
+
+        res.json(result.rows[0]); // Retorna os dados do seeker
+    } catch (err) {
+        console.error('Error retrieving seeker profile:', err);
+        res.status(500).send('Error retrieving seeker profile');
+    }
+};
+
 module.exports = {
     createSeekerProfile,
     updateSeekerProfile,
     createRequest,
-    cancelRequest
+    cancelRequest,
+    getSeekerProfile
 };

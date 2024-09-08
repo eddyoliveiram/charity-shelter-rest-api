@@ -11,7 +11,7 @@ const pool = require('./config/db');
 app.use(express.json());
 
 app.use(cors({
-    origin: 'http://localhost:4000',
+    origin: process.env.FRONTEND_URL,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));

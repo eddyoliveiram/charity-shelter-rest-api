@@ -52,8 +52,29 @@ const updateRequestStatus = async (req, res) => {
     }
 };
 
+const deleteRequest = async (req, res) => {
+    const { request_id } = req.params;
+    try {
+        const result = await pool.query(
+            'DELETE FROM requests WHERE id = $1 RETURNING *',
+            [request_id]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(404).send('Request não encontrada.');
+        }
+
+        res.status(200).json({ message: 'Request deletada com sucesso!', deletedRequest: result.rows[0] });
+    } catch (err) {
+        console.error('Erro ao deletar a solicitação:', err);
+        res.status(500).send('Erro ao deletar a solicitação.');
+    }
+};
+
 module.exports = {
     updateRequestStatus,
-    getProviderRequests
+    getProviderRequests,
+    deleteRequest
 };
+
 

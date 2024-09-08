@@ -86,7 +86,7 @@ const getAllProviders = async (req, res) => {
 
     try {
         const result = await pool.query(`
-            SELECT p.*, u.name, u.email, u.phone,
+            SELECT r.id as request_id, p.*, u.name, u.email, u.phone,
                    CASE 
                        WHEN r.id IS NOT NULL THEN TRUE 
                        ELSE FALSE 
